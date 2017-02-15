@@ -1,18 +1,19 @@
 {
-	"name": "facebook-bot",
-	"description": "Bots and API's ..",
-	"main": "app.js",
-	"dependencies": {
-                "body-parser": "^1.15.0",
-                "config": "^1.20.4",
-                "ejs": "^2.4.2",
-                "express": "^4.13.4",
-                "request": "^2.72.0"
-	},
-	"private": true,
-	"license": "UNLICENSED",
-	"repository" : { 
-		"type" : "git",
-		"url" : "https://github.com/alter-sachin/fb_bot.git"
-	}
+  "name": "facebook-bot",
+  "description": "Bots and API's ..",
+  "main": "app.js",
+  "dependencies": {
+    "body-parser": "^1.16.1",
+    "config": "^1.25.1",
+    "ejs": "^2.5.5",
+    "express": "^4.14.1",
+    "request": "^2.79.0",
+    "winston": "^2.3.1"
+  },
+  "private": true,
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/alter-sachin/fb_bot.git"
+  }
 }
