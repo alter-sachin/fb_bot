@@ -7,7 +7,11 @@ var app = express();	//define our app using express
 var bodyParser = require("body-parser");
 const winston = require('winston')
 
+winston.log('info', 'Hello log files!', {  
+  someKey: 'some-value'
+});
 
+winston.level = 'info','error';
 
 var port = 3000;
 
