@@ -318,6 +318,8 @@ function receivedAccountLink(event) {
  *
  */
 function sendTextMessage(recipientId, messageText) {
+  messageText = messageText.replace('Keiko','Mitsuku');
+  messageText = messageText.replace('keiko','Mitsuku');
   console.log('messagetext',messageText);
   var headers = {
     'Host': 'kakko.pandorabots.com',
@@ -344,6 +346,8 @@ function sendTextMessage(recipientId, messageText) {
           var start = body.indexOf('<that>')+6;
           var end = body.indexOf('</that>');
           var responseMessage = body.substring(start,end);
+          responseMessage = responseMessage.replace('Mitsuku','Keiko');
+          responseMessage = responseMessage.replace('mitsuku','Keiko');
           var messageData = {
             recipient: {
               id: recipientId
