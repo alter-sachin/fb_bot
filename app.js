@@ -1,31 +1,60 @@
-// BASE SETUP
-// ========================================================
+/*
+ * Copyright 2016-present, Facebook, Inc.
+ * All rights reserved.
+ *
+ * This source code is licensed under the license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ */
 
-//call the packages we need
-var express = require("express");	//call express
-var app = express();	//define our app using express
-var bodyParser = require("body-parser");
-const winston = require('winston')
+/* jshint node: true, devel: true */
+'use strict';
 
+const 
+  bodyParser = require('body-parser'),
+  config = require('config'),
+  crypto = require('crypto'),
+  express = require('express'),
+  https = require('https'),  
+  request = require('request');
 
+var app = express();
+app.set('port', process.env.PORT || 5000);
+app.set('view engine', 'ejs');
+app.use(bodyParser.json({ verify: verifyRequestSignature }));
+app.use(express.static('public'));
 
-var port = 3000;
+/*
+ * Be sure to setup your config values before running this code. You can 
+ * set them using environment variables or modifying the config file in /config.
+ *
+ */
 
+// App Secret can be retrieved from the App Dashboard
+const APP_SECRET = (process.env.MESSENGER_APP_SECRET) ? 
+  process.env.MESSENGER_APP_SECRET :
+  config.get('appSecret');
 
-var router = express.Router();
+// Arbitrary value used to validate a webhook
+const VALIDATION_TOKEN = (process.env.MESSENGER_VALIDATION_TOKEN) ?
+  (process.env.MESSENGER_VALIDATION_TOKEN) :
+  config.get('validationToken');
 
-//middleware to use for all requests
-router.use(function(req,res,next){
-	//log (Do analytics for all request , do a common task like verification here)
-	var fullUrl = req.protocol + '://' + req.get('host') + req.originalUrl;
-	console.log("A request came:- " + fullUrl);
-	next(); //make sure we go to the next routes and not stop here
-});
+// Generate a page access token for your page from the App Dashboard
+const PAGE_ACCESS_TOKEN = (process.env.MESSENGER_PAGE_ACCESS_TOKEN) ?
+  (process.env.MESSENGER_PAGE_ACCESS_TOKEN) :
+  config.get('pageAccessToken');
 
-// test route to make sure everything is working (accessed at GET http://ip_address/api/)
-router.get("/",function(req,res){
-	res.json({message: 'hello world !!!!'});
-});
+// URL where the app is running (include protocol). Used to point to scripts and 
+// assets located at this address. 
+const SERVER_URL = (process.env.SERVER_URL) ?
+  (process.env.SERVER_URL) :
+  config.get('serverURL');
+
+if (!(APP_SECRET && VALIDATION_TOKEN && PAGE_ACCESS_TOKEN && SERVER_URL)) {
+  console.error("Missing config values");
+  process.exit(1);
+}
 
 /*
  * Use your own validation token. Check that the token used in the Webhook 
@@ -113,13 +142,266 @@ app.get('/authorize', function(req, res) {
   });
 });
 
+/*
+ * Verify that the callback came from Facebook. Using the App Secret from 
+ * the App Dashboard, we can verify the signature that is sent with each 
+ * callback in the x-hub-signature field, located in the header.
+ *
+ * https://developers.facebook.com/docs/graph-api/webhooks#setup
+ *
+ */
+function verifyRequestSignature(req, res, buf) {
+  var signature = req.headers["x-hub-signature"];
+
+  if (!signature) {
+    // For testing, let's log an error. In production, you should throw an 
+    // error.
+    console.error("Couldn't validate the signature.");
+  } else {
+    var elements = signature.split('=');
+    var method = elements[0];
+    var signatureHash = elements[1];
+
+    var expectedHash = crypto.createHmac('sha1', APP_SECRET)
+                        .update(buf)
+                        .digest('hex');
+
+    if (signatureHash != expectedHash) {
+      throw new Error("Couldn't validate the request signature.");
+    }
+  }
+}
+
+/*
+ * Authorization Event
+ *
+ * The value for 'optin.ref' is defined in the entry point. For the "Send to 
+ * Messenger" plugin, it is the 'data-ref' field. Read more at 
+ * https://developers.facebook.com/docs/messenger-platform/webhook-reference/authentication
+ *
+ */
+function receivedAuthentication(event) {
+  var senderID = event.sender.id;
+  var recipientID = event.recipient.id;
+  var timeOfAuth = event.timestamp;
+
+  // The 'ref' field is set in the 'Send to Messenger' plugin, in the 'data-ref'
+  // The developer can set this to an arbitrary value to associate the 
+  // authentication callback with the 'Send to Messenger' click event. This is
+  // a way to do account linking when the user clicks the 'Send to Messenger' 
+  // plugin.
+  var passThroughParam = event.optin.ref;
+
+  console.log("Received authentication for user %d and page %d with pass " +
+    "through param '%s' at %d", senderID, recipientID, passThroughParam, 
+    timeOfAuth);
+
+  // When an authentication is received, we'll send a message back to the sender
+  // to let them know it was successful.
+  sendTextMessage(senderID, "Authentication successful");
+}
+
+/*
+ * Message Event
+ *
+ * This event is called when a message is sent to your page. The 'message' 
+ * object format can vary depending on the kind of message that was received.
+ * Read more at https://developers.facebook.com/docs/messenger-platform/webhook-reference/message-received
+ *
+ * For this example, we're going to echo any text that we get. If we get some 
+ * special keywords ('button', 'generic', 'receipt'), then we'll send back
+ * examples of those bubbles to illustrate the special message bubbles we've 
+ * created. If we receive a message with an attachment (image, video, audio), 
+ * then we'll simply confirm that we've received the attachment.
+ * 
+ */
+function receivedMessage(event) {
+  var senderID = event.sender.id;
+  var recipientID = event.recipient.id;
+  var timeOfMessage = event.timestamp;
+  var message = event.message;
+
+  console.log("Received message for user %d and page %d at %d with message:", 
+    senderID, recipientID, timeOfMessage);
+  console.log(JSON.stringify(message));
+
+  var isEcho = message.is_echo;
+  var messageId = message.mid;
+  var appId = message.app_id;
+  var metadata = message.metadata;
+
+  // You may get a text or attachment but not both
+  var messageText = message.text;
+  var messageAttachments = message.attachments;
+  var quickReply = message.quick_reply;
+
+  if (isEcho) {
+    // Just logging message echoes to console
+    console.log("Received echo for message %s and app %d with metadata %s", 
+      messageId, appId, metadata);
+    return;
+  } else if (quickReply) {
+    var quickReplyPayload = quickReply.payload;
+    console.log("Quick reply for message %s with payload %s",
+      messageId, quickReplyPayload);
+
+    sendTextMessage(senderID, "Quick reply tapped");
+    return;
+  }
+
+  if (messageText) {
+        sendTextMessage(senderID, messageText);
+  } else if (messageAttachments) {
+    sendTextMessage(senderID, "Message with attachment received");
+  }
+}
 
 
+/*
+ * Postback Event
+ *
+ * This event is called when a postback is tapped on a Structured Message. 
+ * https://developers.facebook.com/docs/messenger-platform/webhook-reference/postback-received
+ * 
+ */
+function receivedPostback(event) {
+  var senderID = event.sender.id;
+  var recipientID = event.recipient.id;
+  var timeOfPostback = event.timestamp;
 
-//START THE SERVER
-// ======================================================
-app.listen(port);
-console.log("Server running at port :- " + port);
+  // The 'payload' param is a developer-defined field which is set in a postback 
+  // button for Structured Messages. 
+  var payload = event.postback.payload;
 
+  console.log("Received postback for user %d and page %d with payload '%s' " + 
+    "at %d", senderID, recipientID, payload, timeOfPostback);
 
-//
+  // When a postback is called, we'll send a message back to the sender to 
+  // let them know it was successful
+  sendTextMessage(senderID, "Postback called");
+}
+
+/*
+ * Message Read Event
+ *
+ * This event is called when a previously-sent message has been read.
+ * https://developers.facebook.com/docs/messenger-platform/webhook-reference/message-read
+ * 
+ */
+function receivedMessageRead(event) {
+  var senderID = event.sender.id;
+  var recipientID = event.recipient.id;
+
+  // All messages before watermark (a timestamp) or sequence have been seen.
+  var watermark = event.read.watermark;
+  var sequenceNumber = event.read.seq;
+
+  console.log("Received message read event for watermark %d and sequence " +
+    "number %d", watermark, sequenceNumber);
+}
+
+/*
+ * Account Link Event
+ *
+ * This event is called when the Link Account or UnLink Account action has been
+ * tapped.
+ * https://developers.facebook.com/docs/messenger-platform/webhook-reference/account-linking
+ * 
+ */
+function receivedAccountLink(event) {
+  var senderID = event.sender.id;
+  var recipientID = event.recipient.id;
+
+  var status = event.account_linking.status;
+  var authCode = event.account_linking.authorization_code;
+
+  console.log("Received account link event with for user %d with status %s " +
+    "and auth code %s ", senderID, status, authCode);
+}
+
+/*
+ * Send a text message using the Send API.
+ *
+ */
+function sendTextMessage(recipientId, messageText) {
+  console.log('messagetext',messageText);
+  var headers = {
+    'Host': 'kakko.pandorabots.com',
+    'Connection': 'keep-alive',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    'Accept-Language': 'en-US,en;q=0.5',
+    'Content-Type': 'application/x-www-form-urlencoded'
+  };
+
+  var dataString = 'input='+encodeURI(messageText)+'&botid=9fa364f2fe345a10';
+
+  console.log('dataString',dataString);
+
+  var options = {
+      url: 'https://kakko.pandorabots.com/pandora/talk-xml',
+      method: 'POST',
+      headers: headers,
+      body: dataString
+  };
+
+  function callback(error, response, body) {
+      console.log('response',body);
+      if (!error && response.statusCode == 200) {
+          var start = body.indexOf('<that>')+6;
+          var end = body.indexOf('</that>');
+          var responseMessage = body.substring(start,end);
+          var messageData = {
+            recipient: {
+              id: recipientId
+            },
+            message: {
+              text: responseMessage,
+              metadata: "DEVELOPER_DEFINED_METADATA"
+            }
+          };
+          callSendAPI(messageData);
+      }
+  }
+
+  request(options, callback);
+}
+
+/*
+ * Call the Send API. The message data goes in the body. If successful, we'll 
+ * get the message id in a response 
+ *
+ */
+function callSendAPI(messageData) {
+  request({
+    uri: 'https://graph.facebook.com/v2.6/me/messages',
+    qs: { access_token: PAGE_ACCESS_TOKEN },
+    method: 'POST',
+    json: messageData
+
+  }, function (error, response, body) {
+    if (!error && response.statusCode == 200) {
+      var recipientId = body.recipient_id;
+      var messageId = body.message_id;
+
+      if (messageId) {
+        console.log("Successfully sent message with id %s to recipient %s", 
+          messageId, recipientId);
+      } else {
+      console.log("Successfully called Send API for recipient %s", 
+        recipientId);
+      }
+    } else {
+      console.error("Failed calling Send API", response.statusCode, response.statusMessage, body.error);
+    }
+  });  
+}
+
+// Start server
+// Webhooks must be available via SSL with a certificate signed by a valid 
+// certificate authority.
+app.listen(app.get('port'), function() {
+  console.log('Node app is running on port', app.get('port'));
+});
+
+module.exports = app;
+
