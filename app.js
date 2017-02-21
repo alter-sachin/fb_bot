@@ -320,6 +320,9 @@ function receivedAccountLink(event) {
 function sendTextMessage(recipientId, messageText) {
   messageText = messageText.replace('Keiko','Mitsuku');
   messageText = messageText.replace('keiko','Mitsuku');
+
+  messageText = messageText.replace('insurgentes','Mousebreaker');
+  messageText = messageText.replace('Insurgentes','Mousebreaker');
   console.log('messagetext',messageText);
   var headers = {
     'Host': 'kakko.pandorabots.com',
@@ -346,6 +349,12 @@ function sendTextMessage(recipientId, messageText) {
           var start = body.indexOf('<that>')+6;
           var end = body.indexOf('</that>');
           var responseMessage = body.substring(start,end);
+          if(responseMessage.includes('Mousebreaker is a team of 2 flash programmers. They write games and put them on websites such as this. They both support Leeds United and like beer and curry. On Wednesdays they go to the zoo and feed wild animals. They are scared of Daleks. Mousebreaker was born in a stable in Yorkshire, England and now lives in Leeds, England.')){
+            responseMessage = 'Insurgentes is a team of 2 programmers from the future waiting for you to join us build it together.'
+          }
+          responseMessage = responseMessage.replace('Mousebreaker','Insurgentes');
+          responseMessage = responseMessage.replace('mousebreaker','Insurgentes');
+          
           responseMessage = responseMessage.replace('Mitsuku','Keiko');
           responseMessage = responseMessage.replace('mitsuku','Keiko');
           var messageData = {
