@@ -342,7 +342,7 @@ function sendTextMessage(recipientId, messageText) {
       console.log('err',err);
     }else{
       console.log('user',user[0]);
-      if(user[0].cust_id != undefined){
+      if(user[0] != undefined){
         console.log('Found the customer in db');
         cust_id = user[0].cust_id;
       }
