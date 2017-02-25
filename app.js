@@ -436,6 +436,13 @@ function handleParsing(responseMessage){
     responseMessage = responseMessage.replace(responseMessage.substring(xgalleryStart,xgalleryEnd+8),'');
   }
 
+    //remove xnslinks
+  var xnsLinkStart = responseMessage.indexOf('xnslink')
+  var xnsLinkEnd = responseMessage.lastIndexOf('xnslink');
+  if(xnsLinkEnd != -1){
+    responseMessage = responseMessage.replace(responseMessage.substring(xnsLinkStart,xnsLinkEnd+7),'');
+  }
+
   // handle other tags.
   var imStart = responseMessage.indexOf('&lt;P');
   var imEnd = responseMessage.lastIndexOf('P&gt;');
