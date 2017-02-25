@@ -416,15 +416,15 @@ function handleParsing(responseMessage){
   responseMessage = responseMessage.replace(/&quot;/g,'"');
 
   var xlinkStart = responseMessage.indexOf('xlink')
-  var xlinkEnd = responseMessage.lastIndexOf('xlink')+5;
+  var xlinkEnd = responseMessage.lastIndexOf('xlink');
   if(xlinkEnd != -1){
-    responseMessage = responseMessage.replace(responseMessage.substring(xlinkStart,xlinkEnd),'');
+    responseMessage = responseMessage.replace(responseMessage.substring(xlinkStart,xlinkEnd+5),'');
   }
   // handle other tags.
   var imStart = responseMessage.indexOf('&lt;P');
-  var imEnd = responseMessage.lastIndexOf('P&gt;')+5;
+  var imEnd = responseMessage.lastIndexOf('P&gt;');
   if(imEnd != -1){
-    responseMessage = responseMessage.replace(responseMessage.substring(imStart,imEnd),'');
+    responseMessage = responseMessage.replace(responseMessage.substring(imStart,imEnd+5),'');
   }
 
   responseMessage = responseMessage.replace(/&lt;br&gt;/g,'');
