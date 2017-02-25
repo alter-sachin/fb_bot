@@ -417,16 +417,21 @@ function handleParsing(responseMessage){
   // handle quotes
   responseMessage = responseMessage.replace('&quot;','"');
 
-  var xlinkStart = responseMessage.indexOf('xlink')+5;
+  var xlinkStart = responseMessage.indexOf('xlink')
   var xlinkEnd = responseMessage.lastIndexOf('xlink');
-  responseMessage = responseMessage.replace(responseMessage.substring(xlinkStart,xlinkEnd),'');
+  if(xlinkEnd != -1){
+    responseMessage = responseMessage.replace(responseMessage.substring(xlinkStart,xlinkEnd),'');
+  }
   // handle other tags.
   var imStart = responseMessage.indexOf('&lt;P');
   var imEnd = responseMessage.lastIndexOf('P&gt;');
-  responseMessage = responseMessage.replace(responseMessage.substring(imStart,imEnd),'');
+  if(imEnd != -1){
+    responseMessage = responseMessage.replace(responseMessage.substring(imStart,imEnd),'');
+  }
 
-  responseMessage.replace('&lt;br&gt;','');
+  responseMessage = responseMessage.replace('&lt;br&gt;','');
   // handle images
+  console.log('handleParsingResponse',responseMessage);
   return responseMessage;
 
 }
@@ -440,6 +445,7 @@ function plagiarizeResponse(responseMessage){
           
     responseMessage = responseMessage.replace('Mitsuku','Keiko');
     responseMessage = responseMessage.replace('mitsuku','Keiko');
+    console.log('plagiarizeResponse',responseMessage);
     return responseMessage;
 }
 
