@@ -7,7 +7,11 @@ const
   crypto = require('crypto'),
   express = require('express'),
   https = require('https'),  
-  request = require('request');
+  request = require('request'),
+  mongoose = require('mongoose');
+
+//connect to our database
+mongoose.connect("mongodb://localhost:27017/fbbot");
 
 var app = express();
 app.set('port', process.env.PORT || 5000);
@@ -15,6 +19,7 @@ app.set('view engine', 'ejs');
 app.use(bodyParser.json({ verify: verifyRequestSignature }));
 app.use(express.static('public'));
 
+var UserInfo = require('./models/userinfo');
 /*
  * Be sure to setup your config values before running this code. You can 
  * set them using environment variables or modifying the config file in /config.
@@ -318,12 +323,10 @@ function receivedAccountLink(event) {
  *
  */
 function sendTextMessage(recipientId, messageText) {
-  messageText = messageText.replace('Keiko','Mitsuku');
-  messageText = messageText.replace('keiko','Mitsuku');
-
-  messageText = messageText.replace('insurgentes','Mousebreaker');
-  messageText = messageText.replace('Insurgentes','Mousebreaker');
+  
+  messageText = plagiarizeRequest(messageText);
   console.log('messagetext',messageText);
+  
   var headers = {
     'Host': 'kakko.pandorabots.com',
     'Connection': 'keep-alive',
@@ -332,7 +335,18 @@ function sendTextMessage(recipientId, messageText) {
     'Content-Type': 'application/x-www-form-urlencoded'
   };
 
+  var cust_id = "cust_id";
+  UserInfo.find({fb_id : recipientId},function(err,user){
+    if(err){
+      console.log(err);
+    }
+    cust_id = user.cust_id;
+  });
+
   var dataString = 'input='+encodeURI(messageText)+'&botid=9fa364f2fe345a10';
+  if(cust_id != "cust_id"){
+    dataString += '&custid='+cust_id;
+  }
 
   console.log('dataString',dataString);
 
@@ -348,22 +362,18 @@ function sendTextMessage(recipientId, messageText) {
       if (!error && response.statusCode == 200) {
           var start = body.indexOf('<that>')+6;
           var end = body.indexOf('</that>');
-          var responseMessage = body.substring(start,end);
-          if(responseMessage.includes('Mousebreaker is a team of 2 flash programmers. They write games and put them on websites such as this. They both support Leeds United and like beer and curry. On Wednesdays they go to the zoo and feed wild animals. They are scared of Daleks. Mousebreaker was born in a stable in Yorkshire, England and now lives in Leeds, England.')){
-            responseMessage = 'Insurgentes is a team of 2 programmers from the future waiting for you to join us build it together.'
+          if(cust_id == 'cust_id'){
+            saveID(recipientId,body);
           }
-          responseMessage = responseMessage.replace('Mousebreaker','Insurgentes');
-          responseMessage = responseMessage.replace('mousebreaker','Insurgentes');
-          
-          responseMessage = responseMessage.replace('Mitsuku','Keiko');
-          responseMessage = responseMessage.replace('mitsuku','Keiko');
+          var responseMessage = body.substring(start,end);
+          responseMessage = handleParsing(responseMessage);
+          responseMessage = plagiarizeResponse(responseMessage);
           var messageData = {
             recipient: {
               id: recipientId
             },
             message: {
-              text: responseMessage,
-              metadata: "DEVELOPER_DEFINED_METADATA"
+              text: responseMessage
             }
           };
           callSendAPI(messageData);
@@ -371,6 +381,65 @@ function sendTextMessage(recipientId, messageText) {
   }
 
   request(options, callback);
+}
+
+function plagiarizeRequest(messageText){
+  messageText = messageText.replace('Keiko','Mitsuku');
+  messageText = messageText.replace('keiko','Mitsuku');
+
+  messageText = messageText.replace('insurgentes','Mousebreaker');
+  messageText = messageText.replace('Insurgentes','Mousebreaker');
+  return messageText;
+}
+
+function saveID(recipientId,body){
+  var start = body.indexOf('custid="')+8;
+  var end = body.indexOf('">');
+  var custid = body.substring(start,end);
+
+  var user = new UserInfo({
+    fb_id : recipientId,
+    cust_id : custid
+  });
+  user.save(function(err,user){
+    if(err){
+      console.log(err);
+    }
+  });
+}
+
+function handleParsing(responseMessage){
+  // 640 limit set by fb messenger
+  if(responseMessage.length > 640){
+    var end = responseMessage.lastIndexOf('.',responseMessage.length - 640);
+    responseMessage = responseMessage.substring(0,end);
+  }
+  // handle quotes
+  responseMessage = responseMessage.replace('&quot;','"');
+
+  var xlinkStart = responseMessage.indexOf('xlink')+5;
+  var xlinkEnd = responseMessage.lastIndexOf('xlink');
+  responseMessage = responseMessage.replace(responseMessage.substring(xlinkStart,xlinkEnd),'');
+  // handle other tags.
+  var imStart = responseMessage.indexOf('&lt;P');
+  var imEnd = responseMessage.lastIndexOf('P&gt;');
+  responseMessage = responseMessage.replace(responseMessage.substring(imStart,imEnd),'');
+
+  responseMessage.replace('&lt;br&gt;','');
+  // handle images
+
+}
+
+function plagiarizeResponse(responseMessage){
+    if(responseMessage.includes('Mousebreaker is a team of 2 flash programmers. They write games and put them on websites such as this. They both support Leeds United and like beer and curry. On Wednesdays they go to the zoo and feed wild animals. They are scared of Daleks. Mousebreaker was born in a stable in Yorkshire, England and now lives in Leeds, England.')){
+          responseMessage = 'Insurgentes is a team of 2 programmers from the future waiting for you to join us build it together.'
+    }
+    responseMessage = responseMessage.replace('Mousebreaker','Insurgentes');
+    responseMessage = responseMessage.replace('mousebreaker','Insurgentes');
+          
+    responseMessage = responseMessage.replace('Mitsuku','Keiko');
+    responseMessage = responseMessage.replace('mitsuku','Keiko');
+    return responseMessage;
 }
 
 /*
