@@ -343,8 +343,10 @@ function sendTextMessage(recipientId, messageText) {
     }else{
       console.log('user',user);
       if(user.cust_id != undefined){
+        console.log('Found the customer in db');
         cust_id = user.cust_id;
       }
+      console.log('cust_id',cust_id);
       var dataString = 'input='+encodeURI(messageText)+'&botid=9fa364f2fe345a10';
       if(cust_id != "cust_id"){
         dataString += '&custid='+cust_id;
