@@ -443,6 +443,13 @@ function handleParsing(responseMessage){
     responseMessage = responseMessage.replace(responseMessage.substring(xnsLinkStart,xnsLinkEnd+7),'');
   }
 
+  //remove xloadwf
+  var xloadswfStart = responseMessage.indexOf('xloadswf')
+  var xloadswfEnd = responseMessage.lastIndexOf('xloadswf');
+  if(xloadswfEnd != -1){
+    responseMessage = responseMessage.replace(responseMessage.substring(xloadswfStart,xloadswfEnd+8),'');
+  }
+
   // handle other tags.
   var imStart = responseMessage.indexOf('&lt;P');
   var imEnd = responseMessage.lastIndexOf('P&gt;');
