@@ -428,6 +428,14 @@ function handleParsing(responseMessage){
   if(xlinkEnd != -1){
     responseMessage = responseMessage.replace(responseMessage.substring(xlinkStart,xlinkEnd+5),'');
   }
+
+  //remove xgallerylinks
+  var xgalleryStart = responseMessage.indexOf('xgallery')
+  var xgalleryEnd = responseMessage.lastIndexOf('xgallery');
+  if(xgalleryEnd != -1){
+    responseMessage = responseMessage.replace(responseMessage.substring(xgalleryStart,xgalleryEnd+8),'');
+  }
+
   // handle other tags.
   var imStart = responseMessage.indexOf('&lt;P');
   var imEnd = responseMessage.lastIndexOf('P&gt;');
