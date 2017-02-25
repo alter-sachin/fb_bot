@@ -427,6 +427,7 @@ function handleParsing(responseMessage){
 
   responseMessage.replace('&lt;br&gt;','');
   // handle images
+  return responseMessage;
 
 }
 
