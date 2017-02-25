@@ -341,10 +341,10 @@ function sendTextMessage(recipientId, messageText) {
     if(err){
       console.log('err',err);
     }else{
-      console.log('user',user);
-      if(user.cust_id != undefined){
+      console.log('user',user[0]);
+      if(user[0].cust_id != undefined){
         console.log('Found the customer in db');
-        cust_id = user.cust_id;
+        cust_id = user[0].cust_id;
       }
       console.log('cust_id',cust_id);
       var dataString = 'input='+encodeURI(messageText)+'&botid=9fa364f2fe345a10';
