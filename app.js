@@ -339,10 +339,12 @@ function sendTextMessage(recipientId, messageText) {
   UserInfo.find({fb_id : recipientId},function(err,user){
     console.log('Inside find fnctn');
     if(err){
-      console.log(err);
+      console.log('err',err);
     }else{
-      console.log(user);
-      cust_id = user.cust_id;
+      console.log('user',user);
+      if(user.cust_id != undefined){
+        cust_id = user.cust_id;
+      }
     }
   var dataString = 'input='+encodeURI(messageText)+'&botid=9fa364f2fe345a10';
   if(cust_id != "cust_id"){
@@ -393,9 +395,11 @@ function plagiarizeRequest(messageText){
 }
 
 function saveID(recipientId,body){
+  console.log('inside saveId function');
   var start = body.indexOf('custid="')+8;
   var end = body.indexOf('">');
   var custid = body.substring(start,end);
+  console.log('custid',custid);
 
   var user = new UserInfo({
     fb_id : recipientId,
