@@ -166,8 +166,6 @@ function verifyRequestSignature(req, res, buf) {
                         .digest('hex');
 
     if (signatureHash != expectedHash) {
-      console.log('reqbody',req);
-      console.log('respbody',res);
       throw new Error("Couldn't validate the request signature.");
     }
   }
@@ -418,13 +416,13 @@ function handleParsing(responseMessage){
   responseMessage = responseMessage.replace(/&quot;/g,'"');
 
   var xlinkStart = responseMessage.indexOf('xlink')
-  var xlinkEnd = responseMessage.lastIndexOf('xlink');
+  var xlinkEnd = responseMessage.lastIndexOf('xlink')+5;
   if(xlinkEnd != -1){
     responseMessage = responseMessage.replace(responseMessage.substring(xlinkStart,xlinkEnd),'');
   }
   // handle other tags.
   var imStart = responseMessage.indexOf('&lt;P');
-  var imEnd = responseMessage.lastIndexOf('P&gt;');
+  var imEnd = responseMessage.lastIndexOf('P&gt;')+5;
   if(imEnd != -1){
     responseMessage = responseMessage.replace(responseMessage.substring(imStart,imEnd),'');
   }
