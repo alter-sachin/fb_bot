@@ -166,6 +166,8 @@ function verifyRequestSignature(req, res, buf) {
                         .digest('hex');
 
     if (signatureHash != expectedHash) {
+      console.log('reqbody',req);
+      console.log('respbody',res);
       throw new Error("Couldn't validate the request signature.");
     }
   }
@@ -384,11 +386,9 @@ function sendTextMessage(recipientId, messageText) {
 }
 
 function plagiarizeRequest(messageText){
-  messageText = messageText.replace('Keiko','Mitsuku');
-  messageText = messageText.replace('keiko','Mitsuku');
+  messageText = messageText.replace(/[kK]eiko/g,'Mitsuku');
+  messageText = messageText.replace(/[iI]nsurgentes/g,'Mousebreaker');
 
-  messageText = messageText.replace('insurgentes','Mousebreaker');
-  messageText = messageText.replace('Insurgentes','Mousebreaker');
   return messageText;
 }
 
@@ -415,7 +415,7 @@ function handleParsing(responseMessage){
     responseMessage = responseMessage.substring(0,end);
   }
   // handle quotes
-  responseMessage = responseMessage.replace('&quot;','"');
+  responseMessage = responseMessage.replace(/&quot;/g,'"');
 
   var xlinkStart = responseMessage.indexOf('xlink')
   var xlinkEnd = responseMessage.lastIndexOf('xlink');
@@ -429,7 +429,7 @@ function handleParsing(responseMessage){
     responseMessage = responseMessage.replace(responseMessage.substring(imStart,imEnd),'');
   }
 
-  responseMessage = responseMessage.replace('&lt;br&gt;','');
+  responseMessage = responseMessage.replace(/&lt;br&gt;/g,'');
   // handle images
   console.log('handleParsingResponse',responseMessage);
   return responseMessage;
@@ -440,11 +440,9 @@ function plagiarizeResponse(responseMessage){
     if(responseMessage.includes('Mousebreaker is a team of 2 flash programmers. They write games and put them on websites such as this. They both support Leeds United and like beer and curry. On Wednesdays they go to the zoo and feed wild animals. They are scared of Daleks. Mousebreaker was born in a stable in Yorkshire, England and now lives in Leeds, England.')){
           responseMessage = 'Insurgentes is a team of 2 programmers from the future waiting for you to join us build it together.'
     }
-    responseMessage = responseMessage.replace('Mousebreaker','Insurgentes');
-    responseMessage = responseMessage.replace('mousebreaker','Insurgentes');
-          
-    responseMessage = responseMessage.replace('Mitsuku','Keiko');
-    responseMessage = responseMessage.replace('mitsuku','Keiko');
+    responseMessage = responseMessage.replace(/[mM]ousebreaker/g,'Insurgentes');     
+    responseMessage = responseMessage.replace(/[mM]itsuku/g,'Keiko');
+
     console.log('plagiarizeResponse',responseMessage);
     return responseMessage;
 }
