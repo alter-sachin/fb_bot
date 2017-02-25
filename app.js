@@ -411,7 +411,7 @@ function saveID(recipientId,body){
 function handleParsing(responseMessage){
   // 640 limit set by fb messenger
   if(responseMessage.length > 640){
-    var end = responseMessage.lastIndexOf('.',responseMessage.length - 640);
+    var end = responseMessage.lastIndexOf('.',640);
     responseMessage = responseMessage.substring(0,end);
   }
   // handle quotes
