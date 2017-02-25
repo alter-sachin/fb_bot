@@ -345,11 +345,10 @@ function sendTextMessage(recipientId, messageText) {
       if(user.cust_id != undefined){
         cust_id = user.cust_id;
       }
-    }
-  var dataString = 'input='+encodeURI(messageText)+'&botid=9fa364f2fe345a10';
-  if(cust_id != "cust_id"){
-    dataString += '&custid='+cust_id;
-  }
+      var dataString = 'input='+encodeURI(messageText)+'&botid=9fa364f2fe345a10';
+      if(cust_id != "cust_id"){
+        dataString += '&custid='+cust_id;
+      }
 
   console.log('dataString',dataString);
 
@@ -384,6 +383,7 @@ function sendTextMessage(recipientId, messageText) {
   }
 
   request(options, callback);
+    }
   });
 }
 
